@@ -8,9 +8,9 @@ dotenv.config();
 const app = express();
 
 app.use(cors({
-  origin: ["https://pvplates.netlify.app"], // ✅ allow frontend
-  credentials: true
+  origin: "https://pvplates.netlify.app" // ✅ just this is enough
 }));
+
 
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
