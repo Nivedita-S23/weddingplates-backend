@@ -7,21 +7,25 @@ const path = require("path");
 dotenv.config();
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: ["https://pvplates.netlify.app"], // ✅ allow frontend
+  credentials: true
+}));
+
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// ✅ Only one route usage for auth
+// Routes
 app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/products", require("./routes/productRoutes"));
+app.use("/api/orders", require("./routes/orderRoutes"));
 
+// DB Connection
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Connected"))
   .catch((err) => console.log(err));
 
-// Other routes
-app.use("/api/products", require("./routes/productRoutes"));
-app.use("/api/orders", require("./routes/orderRoutes"));
-
+// Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
