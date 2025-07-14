@@ -1,54 +1,59 @@
+// index.js
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const path = require("path");
 
-// 🛡️ Security middleware
+// 🔒 Security middlewares
 const helmet = require("helmet");
-const rateLimit = require("express-rate-limit");
 const mongoSanitize = require("express-mongo-sanitize");
-const xss = require("xss-clean");
+const xssClean = require("xss-clean");
+const rateLimit = require("express-rate-limit");
+const hpp = require("hpp");
 
 dotenv.config();
 const app = express();
 
-// ✅ CORS setup
-app.use(cors({
-  origin: "https://pvplates.netlify.app",
-  credentials: true
-}));
+// CORS: restrict to your Netlify domain
+app.use(cors({ origin: "https://pvplates.netlify.app" }));
 
-// ✅ Security middleware
-app.use(helmet()); // HTTP headers security
-app.use(xss()); // Prevent XSS
-app.use(mongoSanitize()); // Prevent NoSQL injection
+// Security headers
+app.use(helmet());
 
-// ✅ Rate limiter
+// Parse JSON body
+app.use(express.json({ limit: "10kb" }));
+
+// Prevent NoSQL injection
+app.use(mongoSanitize()); // sanitizes req.body, .query, .params :contentReference[oaicite:1]{index=1}
+
+// Prevent XSS attacks
+app.use(xssClean()); // cleans user input :contentReference[oaicite:2]{index=2}
+
+// Prevent HTTP parameter pollution
+app.use(hpp());
+
+// Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: "Too many requests from this IP, please try again later."
+  windowMs: 15 * 60 * 1000,
+  max: 100
 });
 app.use(limiter);
 
-// ✅ Body parser
-app.use(express.json());
-
-// ✅ Serve static files (uploads)
+// Serve static uploads
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// ✅ API Routes
+// 🛤 Your routes
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/products", require("./routes/productRoutes"));
 app.use("/api/orders", require("./routes/orderRoutes"));
 
-// ✅ MongoDB connection
-mongoose
-  .connect(process.env.MONGO_URI)
+// DB connection & server
+mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Connected"))
-  .catch((err) => console.log(err));
+  .catch(console.error);
 
-// ✅ Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+
